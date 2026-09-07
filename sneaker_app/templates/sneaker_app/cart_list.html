@@ -23,7 +23,7 @@
             </thead>
             <tbody>
                 {% for item in items %}
-                <tr>
+                <tr {% if not item.sneaker.is_in_stock %}class="table-danger"{% endif %}>
                     <td>
                         {% if item.sneaker.image %}
                             <img src="{{ item.sneaker.image.url }}" alt="{{ item.sneaker.name }}" width="90" height="90" style="object-fit: contain;" class="rounded border" loading="lazy">
@@ -34,6 +34,11 @@
                     <td>
                         <strong>{{ item.sneaker.name }}</strong><br>
                         <small class="text-muted">{{ item.sneaker.brand }} | ไซส์ {{ item.sneaker.size }} US</small>
+                        {% if not item.sneaker.is_in_stock %}
+                        <span class="badge bg-danger rounded-pill mt-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>สินค้าหมด กรุณานำออก</span>
+                        {% elif item.quantity > item.sneaker.available_stock %}
+                        <span class="badge bg-warning text-dark rounded-pill mt-1"><i class="fa-solid fa-triangle-exclamation me-1"></i>สต็อกเหลือ {{ item.sneaker.available_stock }} คู่</span>
+                        {% endif %}
                     </td>
                     <td class="fw-semibold">{{ item.sneaker.price }} บาท</td>
                     <td style="width: 190px;">
@@ -60,7 +65,11 @@
         </table>
         </div>
         <div class="d-flex justify-content-end mt-4">
+            {% if has_out_of_stock %}
+            <button class="btn btn-secondary btn-lg px-5" disabled title="มีสินค้าที่หมดสต็อกอยู่ในตะกร้า"><i class="fa-solid fa-ban me-1"></i>ไม่สามารถสั่งซื้อได้ (มีสินค้าหมด)</button>
+            {% else %}
             <a href="{% url 'checkout' %}" class="btn btn-accent btn-lg px-5"><i class="fa-solid fa-receipt me-1"></i>ดำเนินการสั่งซื้อ</a>
+            {% endif %}
         </div>
         {% else %}
         <div class="text-center py-5">

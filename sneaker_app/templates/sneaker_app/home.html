@@ -27,7 +27,11 @@
             </div>
         </div>
         <div class="col-lg-4 text-center d-none d-lg-block">
+            {% if hero_sneaker.image %}
+            <img src="{{ hero_sneaker.image.url }}" alt="{{ hero_sneaker.name }}" class="img-fluid rounded-4 shadow-lg" style="max-height: 340px; object-fit: contain; filter: drop-shadow(0 18px 20px rgba(255,87,34,.35)); border: 3px solid rgba(255,255,255,.15);">
+            {% else %}
             <span style="font-size: 8.5rem; filter: drop-shadow(0 18px 20px rgba(255,87,34,.35));">👟</span>
+            {% endif %}
         </div>
     </div>
 </div>

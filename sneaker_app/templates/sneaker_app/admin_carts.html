@@ -28,7 +28,13 @@
 <div class="card card-app shadow-sm mb-4">
     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
         <span class="fw-bold"><i class="fa-solid fa-user me-2 text-warning"></i>{{ cart.user.username }}</span>
-        <span class="badge bg-warning text-dark fs-6 rounded-pill">ยอดรวม {{ cart.total }} บาท</span>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-warning text-dark fs-6 rounded-pill">ยอดรวม {{ cart.total }} บาท</span>
+            <form method="POST" action="{% url 'admin_clear_cart' cart.user.id %}" onsubmit="return confirm('ต้องการล้างตะกร้าทั้งหมดของ {{ cart.user.username }} ใช่หรือไม่?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fa-solid fa-brush me-1"></i>ล้างตะกร้า</button>
+            </form>
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table table-hover align-middle table-app mb-0">
@@ -39,6 +45,7 @@
                     <th>ราคา/คู่</th>
                     <th class="text-center">จำนวน</th>
                     <th class="text-end">รวม</th>
+                    <th class="text-center">ลบ</th>
                 </tr>
             </thead>
             <tbody>
@@ -58,6 +65,12 @@
                     <td class="fw-semibold">{{ item.sneaker.price }} บาท</td>
                     <td class="text-center fw-bold">{{ item.quantity }}</td>
                     <td class="text-end fw-bold">{{ item.total_price }} บาท</td>
+                    <td class="text-center">
+                        <form method="POST" action="{% url 'admin_remove_cart_item' item.pk %}" onsubmit="return confirm('ต้องการลบ {{ item.sneaker.name }} ออกจากตะกร้าของ {{ cart.user.username }} ใช่หรือไม่?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger btn-action" title="ลบรายการนี้"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

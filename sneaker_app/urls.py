@@ -31,9 +31,13 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('order/success/<int:order_id>/', views.order_success, name='order_success'),
     path('my-orders/', views.my_orders, name='my_orders'),
+    path('my-orders/delete/<int:pk>/', views.order_delete, name='order_delete'),
     path('admin-carts/', views.admin_carts, name='admin_carts'),
+    path('admin-carts/remove/<int:pk>/', views.admin_remove_cart_item, name='admin_remove_cart_item'),
+    path('admin-carts/clear/<int:user_id>/', views.admin_clear_cart, name='admin_clear_cart'),
     path('admin-orders/', views.admin_orders, name='admin_orders'),
     path('admin-orders/update/<int:pk>/', views.update_order_status, name='update_order_status'),
+    path('admin-orders/delete/<int:pk>/', views.admin_order_delete, name='admin_order_delete'),
 
     # ระบบสมาชิก (Authentication)
     path('login/', views.login_view, name='login'),

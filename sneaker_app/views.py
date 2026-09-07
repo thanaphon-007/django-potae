@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -28,10 +29,12 @@ def home(request):
     total_sneakers = Sneaker.objects.count()
     total_stock = Stock.objects.count()
     total_employees = Employee.objects.count()
+    hero_sneaker = Sneaker.objects.exclude(image='').exclude(image=None).order_by('-created_at').first()
     context = {
         'total_sneakers': total_sneakers,
         'total_stock': total_stock,
         'total_employees': total_employees,
+        'hero_sneaker': hero_sneaker,
     }
     if request.user.is_authenticated:
         if request.user.is_staff:
@@ -92,7 +95,9 @@ def sneaker_delete(request, pk):
 # === ระบบจัดการคลังสินค้า (สต็อก) ===
 @login_required(login_url='/login/')
 def stock_list(request):
-    stocks = Stock.objects.all().order_by('-last_updated')
+    stocks_list = Stock.objects.all().order_by('-last_updated')
+    paginator = Paginator(stocks_list, 5)
+    stocks = paginator.get_page(request.GET.get('page'))
     return render(request, 'sneaker_app/stock_list.html', {'stocks': stocks})
 
 
@@ -133,7 +138,9 @@ def stock_delete(request, pk):
 # === ระบบจัดการพนักงาน ===
 @login_required(login_url='/login/')
 def employee_list(request):
-    employees = Employee.objects.all().order_by('-id')
+    employees_list = Employee.objects.all().order_by('-id')
+    paginator = Paginator(employees_list, 5)
+    employees = paginator.get_page(request.GET.get('page'))
     return render(request, 'sneaker_app/employee_list.html', {'employees': employees})
 
 
@@ -176,7 +183,8 @@ def employee_delete(request, pk):
 def cart_list(request):
     items = CartItem.objects.filter(user=request.user).select_related('sneaker')
     total = sum(item.total_price() for item in items)
-    return render(request, 'sneaker_app/cart_list.html', {'items': items, 'total': total})
+    has_out_of_stock = any(not item.sneaker.is_in_stock() or item.quantity > item.sneaker.available_stock() for item in items)
+    return render(request, 'sneaker_app/cart_list.html', {'items': items, 'total': total, 'has_out_of_stock': has_out_of_stock})
 
 
 @admin_required
@@ -196,11 +204,42 @@ def admin_carts(request):
     return render(request, 'sneaker_app/admin_carts.html', {'carts': carts, 'query': query})
 
 
+@admin_required
+def admin_remove_cart_item(request, pk):
+    cart_item = get_object_or_404(CartItem, pk=pk)
+    if request.method == 'POST':
+        username = cart_item.user.username
+        item_name = cart_item.sneaker.name
+        cart_item.delete()
+        messages.success(request, f"ลบ {item_name} ออกจากตะกร้าของ {username} แล้ว")
+    return redirect('admin_carts')
+
+
+@admin_required
+def admin_clear_cart(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        count = CartItem.objects.filter(user=user).count()
+        CartItem.objects.filter(user=user).delete()
+        if count:
+            messages.success(request, f"ล้างตะกร้าของ {user.username} แล้ว ({count} รายการ)")
+        else:
+            messages.info(request, f"ตะกร้าของ {user.username} ว่างอยู่แล้ว")
+    return redirect('admin_carts')
+
+
 @login_required(login_url='/login/')
 def add_to_cart(request, pk):
     sneaker = get_object_or_404(Sneaker, pk=pk)
+    if not sneaker.is_in_stock():
+        messages.error(request, f"{sneaker.name} สินค้าหมด ไม่สามารถสั่งซื้อได้ในขณะนี้")
+        return redirect('sneaker_list')
     cart_item, created = CartItem.objects.get_or_create(user=request.user, sneaker=sneaker)
     if not created:
+        available = sneaker.available_stock()
+        if cart_item.quantity + 1 > available:
+            messages.error(request, f"จำนวนเกินสต็อกคงเหลือ ({available} คู่)")
+            return redirect('cart_list')
         cart_item.quantity += 1
         cart_item.save()
     messages.success(request, f"เพิ่ม {sneaker.name} ลงตะกร้าแล้ว")
@@ -217,6 +256,10 @@ def update_cart_quantity(request, pk):
                 cart_item.delete()
                 messages.success(request, "ลบสินค้าออกจากตะกร้าแล้ว")
             else:
+                available = cart_item.sneaker.available_stock()
+                if quantity > available:
+                    messages.error(request, f"จำนวนเกินสต็อกคงเหลือ ({available} คู่) กรุณาลดจำนวนลง")
+                    return redirect('cart_list')
                 cart_item.quantity = quantity
                 cart_item.save()
                 messages.success(request, "อัปเดตจำนวนสินค้าแล้ว")
@@ -240,6 +283,15 @@ def checkout(request):
     if not items:
         messages.warning(request, "ตะกร้าของคุณว่างเปล่า กรุณาเลือกสินค้าก่อน")
         return redirect('cart_list')
+
+    for item in items:
+        available = item.sneaker.available_stock()
+        if available <= 0:
+            messages.error(request, f"{item.sneaker.name} สินค้าหมด ไม่สามารถสั่งซื้อได้ กรุณานำออกจากตะกร้า")
+            return redirect('cart_list')
+        if item.quantity > available:
+            messages.error(request, f"{item.sneaker.name} เหลือสต็อกเพียง {available} คู่ กรุณาปรับจำนวนในตะกร้า")
+            return redirect('cart_list')
 
     total = sum(item.total_price() for item in items)
 
@@ -272,7 +324,9 @@ def order_success(request, order_id):
 
 @login_required(login_url='/login/')
 def my_orders(request):
-    orders = Order.objects.filter(user=request.user).prefetch_related('items').order_by('-created_at')
+    orders_list = Order.objects.filter(user=request.user).prefetch_related('items').order_by('-created_at')
+    paginator = Paginator(orders_list, 5)
+    orders = paginator.get_page(request.GET.get('page'))
     return render(request, 'sneaker_app/my_orders.html', {'orders': orders})
 
 
@@ -280,11 +334,13 @@ def my_orders(request):
 def admin_orders(request):
     query = request.GET.get('q', '').strip()
     status = request.GET.get('status', '').strip()
-    orders = Order.objects.select_related('user').prefetch_related('items').order_by('-created_at')
+    orders_list = Order.objects.select_related('user').prefetch_related('items').order_by('-created_at')
     if query:
-        orders = orders.filter(Q(user__username__icontains=query) | Q(id__icontains=query) | Q(phone__icontains=query))
+        orders_list = orders_list.filter(Q(user__username__icontains=query) | Q(id__icontains=query) | Q(phone__icontains=query))
     if status:
-        orders = orders.filter(status=status)
+        orders_list = orders_list.filter(status=status)
+    paginator = Paginator(orders_list, 5)
+    orders = paginator.get_page(request.GET.get('page'))
     return render(request, 'sneaker_app/admin_orders.html', {'orders': orders, 'query': query, 'status': status})
 
 
@@ -300,6 +356,26 @@ def update_order_status(request, pk):
         else:
             messages.error(request, "สถานะไม่ถูกต้อง")
     return redirect('admin_orders')
+
+
+@login_required(login_url='/login/')
+def order_delete(request, pk):
+    order = get_object_or_404(Order, pk=pk, user=request.user)
+    if request.method == 'POST':
+        order.delete()
+        messages.success(request, f"ลบออเดอร์ #{order.id} สำเร็จแล้ว")
+        return redirect('my_orders')
+    return render(request, 'sneaker_app/confirm_delete.html', {'item_name': f"ออเดอร์ #{order.id}", 'cancel_url': 'my_orders'})
+
+
+@admin_required
+def admin_order_delete(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        order.delete()
+        messages.success(request, f"ลบออเดอร์ #{order.id} สำเร็จแล้ว")
+        return redirect('admin_orders')
+    return render(request, 'sneaker_app/confirm_delete.html', {'item_name': f"ออเดอร์ #{order.id} ของ {order.user.username}", 'cancel_url': 'admin_orders'})
 
 
 # === ระบบสมาชิก (Authentication) ===

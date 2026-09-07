@@ -132,14 +132,32 @@
         .form-app .form-control,
         .form-app .form-select {
             border-radius: 12px;
-            padding: .55rem .9rem;
-            border: 1.5px solid #e2e5ea;
-            transition: border-color .2s, box-shadow .2s;
+            padding: .7rem 1rem;
+            font-size: 1rem;
+            border: 2px solid #aeb6c2;
+            background-color: #fbfcfd;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,.06);
+            transition: border-color .2s, box-shadow .2s, background-color .2s;
+        }
+        .form-app .form-control:hover,
+        .form-app .form-select:hover {
+            border-color: #8a94a3;
+            background-color: #fff;
         }
         .form-app .form-control:focus,
         .form-app .form-select:focus {
             border-color: var(--brand-accent);
-            box-shadow: 0 0 0 .2rem rgba(255,87,34,.15);
+            background-color: #fff;
+            box-shadow: 0 0 0 .25rem rgba(255,87,34,.18), inset 0 1px 3px rgba(0,0,0,.04);
+        }
+        .form-app .form-control::placeholder {
+            color: #8893a3;
+            opacity: 1;
+        }
+        .form-app .input-group-text {
+            background-color: #eef1f5;
+            border: 2px solid #aeb6c2;
+            color: #556071;
         }
 
         /* ===== Toast ข้อความ ===== */

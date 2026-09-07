@@ -23,6 +23,13 @@ class Sneaker(models.Model):
     def __str__(self):
         return f"{self.brand} {self.name} (Size: {self.size})"
 
+    def available_stock(self):
+        total = self.stock_set.aggregate(total=models.Sum('quantity'))['total'] or 0
+        return total
+
+    def is_in_stock(self):
+        return self.available_stock() > 0
+
 # ระบบหลัก 2: จัดการคลังสินค้า (สต็อก)
 class Stock(models.Model):
     STATUS_CHOICES = [
