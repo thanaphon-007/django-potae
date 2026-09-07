@@ -1,0 +1,91 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-receipt me-2 text-success"></i>ชำระสินค้า / สั่งซื้อ</h3>
+    <a href="{% url 'cart_list' %}" class="btn btn-outline-secondary btn-pill-modern px-4"><i class="fa-solid fa-arrow-left me-1"></i>กลับตะกร้า</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-app shadow-sm">
+            <div class="card-header bg-dark text-white"><h5 class="mb-0"><i class="fa-solid fa-truck-fast me-2"></i>ข้อมูลการจัดส่ง</h5></div>
+            <div class="card-body">
+                <form method="POST" class="form-app">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small mb-1">ชื่อ</label>
+                            {{ form.first_name }}
+                            {% for error in form.first_name.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small mb-1">นามสกุล</label>
+                            {{ form.last_name }}
+                            {% for error in form.last_name.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold small mb-1">ที่อยู่จัดส่ง</label>
+                            {{ form.address }}
+                            {% for error in form.address.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold small mb-1">รหัสไปรษณีย์</label>
+                            {{ form.postal_code }}
+                            {% for error in form.postal_code.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold small mb-1">เบอร์โทรศัพท์</label>
+                            {{ form.phone }}
+                            {% for error in form.phone.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100 py-2 mt-4"><i class="fa-solid fa-circle-check me-1"></i>ยืนยันการสั่งซื้อ</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-app shadow-sm">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0"><i class="fa-solid fa-cart-shopping me-2"></i>สินค้าในคำสั่งซื้อ</h5></div>
+            <div class="card-body">
+                <table class="table table-sm align-middle table-app mb-0">
+                    <thead>
+                        <tr>
+                            <th>สินค้า</th>
+                            <th class="text-center">จำนวน</th>
+                            <th class="text-end">รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if item.sneaker.image %}
+                                    <img src="{{ item.sneaker.image.url }}" alt="{{ item.sneaker.name }}" width="70" height="70" style="object-fit: contain;" class="rounded border" loading="lazy">
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ item.sneaker.name }}</strong><br>
+                                        <small class="text-muted">{{ item.sneaker.price }} บาท/คู่</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center fw-bold">{{ item.quantity }}</td>
+                            <td class="text-end fw-bold">{{ item.total_price }} บาท</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-semibold">
+                            <td colspan="2" class="text-end">รวมทั้งสิ้น</td>
+                            <td class="text-end fw-bold text-danger fs-5">{{ total }} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

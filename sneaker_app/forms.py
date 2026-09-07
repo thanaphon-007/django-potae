@@ -1,0 +1,83 @@
+from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from .models import Sneaker, Stock, Employee, Profile, Order
+
+class SneakerForm(forms.ModelForm):
+    class Meta:
+        model = Sneaker
+        fields = ['name', 'brand', 'description', 'size', 'price', 'release_date', 'image']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'brand': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'size': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.5'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'release_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+
+class StockForm(forms.ModelForm):
+    class Meta:
+        model = Stock
+        fields = ['sneaker', 'quantity', 'location', 'status']
+        widgets = {
+            'sneaker': forms.Select(attrs={'class': 'form-select'}),
+            'quantity': forms.NumberInput(attrs={'class': 'form-control'}),
+            'location': forms.TextInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+class EmployeeForm(forms.ModelForm):
+    class Meta:
+        model = Employee
+        fields = ['photo', 'first_name', 'last_name', 'nickname', 'position', 'phone', 'salary']
+        widgets = {
+            'photo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อจริง'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'นามสกุล'}),
+            'nickname': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อเล่น'}),
+            'position': forms.Select(attrs={'class': 'form-select'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08x-xxx-xxxx'}),
+            'salary': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'ระบุเงินเดือน'}),
+        }
+
+class RegisterForm(UserCreationForm):
+    avatar = forms.ImageField(
+        required=False,
+        label="รูปโปรไฟล์",
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta(UserCreationForm.Meta):
+        fields = ['username']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'ชื่อผู้ใช้'})
+        for name in ['password1', 'password2']:
+            self.fields[name].widget.attrs.update({'class': 'form-control'})
+
+class CheckoutForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['first_name', 'last_name', 'address', 'postal_code', 'phone']
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อ'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'นามสกุล'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'เช่น ถนนสุขุมวิท เขตคลองเตย กรุงเทพฯ'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'เช่น 10110', 'maxlength': '5', 'pattern': '[0-9]{5}', 'title': 'ระบุรหัสไปรษณีย์ 5 หลัก'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08x-xxx-xxxx'}),
+        }
+        labels = {
+            'first_name': 'ชื่อ',
+            'last_name': 'นามสกุล',
+            'address': 'ที่อยู่จัดส่ง',
+            'postal_code': 'รหัสไปรษณีย์',
+            'phone': 'เบอร์โทรศัพท์',
+        }
+
+    def clean_postal_code(self):
+        postal_code = self.cleaned_data.get('postal_code', '').strip()
+        if not postal_code.isdigit() or len(postal_code) != 5:
+            raise forms.ValidationError("รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลักเท่านั้น")
+        return postal_code

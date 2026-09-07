@@ -1,0 +1,69 @@
+{% extends 'sneaker_app/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="fa-solid fa-boxes-stacked me-2 text-info"></i>คลังสินค้า (สต็อก)</h3>
+        <small class="text-muted">ทั้งหมด {{ stocks.count }} รายการ</small>
+    </div>
+    {% if user.is_staff %}
+    <a href="{% url 'stock_create' %}" class="btn btn-success btn-pill-modern"><i class="fa-solid fa-plus me-1"></i>เพิ่มคลังสินค้า</a>
+    {% endif %}
+</div>
+
+<div class="card card-app shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+        <table class="table table-hover align-middle table-app mb-0">
+            <thead>
+                <tr>
+                    <th>รูปสินค้า</th>
+                    <th>ชื่อรองเท้า</th>
+                    <th>จำนวนคงเหลือ</th>
+                    <th>สถานที่เก็บ</th>
+                    <th>สถานะ</th>
+                    {% if user.is_staff %}<th class="text-center">จัดการ</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in stocks %}
+                <tr>
+                    <td>
+                        {% if item.sneaker.image %}
+                            <img src="{{ item.sneaker.image.url }}" alt="{{ item.sneaker.name }}" width="80" height="80" style="object-fit: contain;" class="rounded border" loading="lazy">
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="fw-semibold">{{ item.sneaker.name }}</span>
+                        <small class="text-muted d-block">{{ item.sneaker.brand }}</small>
+                    </td>
+                    <td>
+                        <span class="badge {% if item.quantity == 0 %}bg-danger{% elif item.quantity < 5 %}bg-warning text-dark{% else %}bg-success{% endif %} rounded-pill fs-6">{{ item.quantity }}</span>
+                    </td>
+                    <td>{{ item.location }}</td>
+                    <td>
+                        {% if item.status == 'In Stock' %}<span class="badge bg-success rounded-pill">มีสินค้า</span>
+                        {% elif item.status == 'Out of Stock' %}<span class="badge bg-danger rounded-pill">สินค้าหมด</span>
+                        {% else %}<span class="badge bg-warning text-dark rounded-pill">พรีออเดอร์</span>{% endif %}
+                    </td>
+                    {% if user.is_staff %}
+                    <td class="text-center">
+                        <div class="d-flex gap-1 justify-content-center">
+                        <a href="{% url 'stock_update' item.pk %}" class="btn btn-sm btn-warning btn-action"><i class="fa-solid fa-pen"></i></a>
+                        <a href="{% url 'stock_delete' item.pk %}" class="btn btn-sm btn-danger btn-action"><i class="fa-solid fa-trash"></i></a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if user.is_staff %}6{% else %}5{% endif %}" class="text-center py-5 text-muted"><i class="fa-solid fa-box-open me-2"></i>ยังไม่มีข้อมูลสต็อก</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

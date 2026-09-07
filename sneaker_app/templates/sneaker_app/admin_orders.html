@@ -1,0 +1,105 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}คำสั่งซื้อลูกค้า | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-clipboard-list me-2 text-danger"></i>คำสั่งซื้อของลูกค้า</h3>
+    <a href="{% url 'home' %}" class="btn btn-outline-dark btn-pill-modern px-3"><i class="fa-solid fa-house me-1"></i>หน้าหลัก</a>
+</div>
+
+<div class="card card-app shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form class="d-flex gap-2 flex-wrap" method="GET" action="">
+            <div class="input-group" style="max-width: 300px;">
+                <input class="form-control" type="search" name="q" placeholder="ค้นหา ชื่อผู้ใช้ / เลขออเดอร์ / เบอร์..." value="{{ query }}">
+                <button class="btn btn-dark" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
+            <select class="form-select" style="max-width: 200px;" name="status">
+                <option value="">สถานะทั้งหมด</option>
+                <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>รอดำเนินการ</option>
+                <option value="Shipping" {% if status == 'Shipping' %}selected{% endif %}>กำลังจัดส่ง</option>
+                <option value="Completed" {% if status == 'Completed' %}selected{% endif %}>จัดส่งแล้ว</option>
+                <option value="Cancelled" {% if status == 'Cancelled' %}selected{% endif %}>ยกเลิก</option>
+            </select>
+            {% if query or status %}<a href="{% url 'admin_orders' %}" class="btn btn-outline-secondary btn-pill-modern"><i class="fa-solid fa-xmark me-1"></i>ล้าง</a>{% endif %}
+        </form>
+    </div>
+</div>
+
+{% if orders %}
+{% for order in orders %}
+<div class="card card-app shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="fw-bold"><i class="fa-solid fa-receipt me-2 text-warning"></i>ออเดอร์ #{{ order.id }}</span>
+            <span class="ms-2 text-secondary small"><i class="fa-solid fa-user me-1"></i>{{ order.user.username }}</span>
+            <span class="ms-2 text-secondary small"><i class="fa-regular fa-clock me-1"></i>{{ order.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div>
+            {% if order.status == 'Pending' %}<span class="badge bg-warning text-dark fs-6 rounded-pill">{{ order.get_status_display }}</span>
+            {% elif order.status == 'Shipping' %}<span class="badge bg-info fs-6 rounded-pill">{{ order.get_status_display }}</span>
+            {% elif order.status == 'Completed' %}<span class="badge bg-success fs-6 rounded-pill">{{ order.get_status_display }}</span>
+            {% else %}<span class="badge bg-danger fs-6 rounded-pill">{{ order.get_status_display }}</span>{% endif %}
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <p class="small mb-1 text-muted">
+                    <i class="fa-solid fa-user me-1"></i><strong>{{ order.first_name }} {{ order.last_name }}</strong><br>
+                    <i class="fa-solid fa-location-dot me-1"></i>{{ order.address }} {{ order.postal_code }}<br>
+                    <i class="fa-solid fa-phone me-1"></i>{{ order.phone }}
+                </p>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-sm align-middle table-app mb-0">
+                    <thead>
+                        <tr>
+                            <th>สินค้า</th>
+                            <th class="text-center">จำนวน</th>
+                            <th class="text-end">รวม</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.sneaker.name }}</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end fw-semibold">{{ item.total_price }} บาท</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-semibold">
+                            <td colspan="2" class="text-end fw-bold">ยอดรวม</td>
+                            <td class="text-end fw-bold text-danger">{{ order.total_price }} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        <form method="POST" action="{% url 'update_order_status' order.pk %}" class="d-flex align-items-center gap-2 mt-3 pt-3 border-top flex-wrap">
+            {% csrf_token %}
+            <label class="fw-semibold small mb-0 text-dark">เปลี่ยนสถานะ:</label>
+            <select name="status" class="form-select form-select-sm" style="max-width: 180px;">
+                <option value="Pending" {% if order.status == 'Pending' %}selected{% endif %}>รอดำเนินการ</option>
+                <option value="Shipping" {% if order.status == 'Shipping' %}selected{% endif %}>กำลังจัดส่ง</option>
+                <option value="Completed" {% if order.status == 'Completed' %}selected{% endif %}>จัดส่งแล้ว</option>
+                <option value="Cancelled" {% if order.status == 'Cancelled' %}selected{% endif %}>ยกเลิก</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-dark btn-pill-modern px-4"><i class="fa-solid fa-rotate me-1"></i>อัปเดต</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card card-app shadow-sm">
+    <div class="card-body text-center py-5">
+        <span class="stat-icon bg-light text-dark mx-auto" style="width: 90px; height: 90px; border-radius: 24px; font-size: 2.8rem;"><i class="fa-solid fa-clipboard-list"></i></span>
+        <h4 class="mt-4 fw-bold text-dark">ยังไม่มีคำสั่งซื้อ{% if query or status %}ที่ตรงกับเงื่อนไข{% endif %}</h4>
+        <p class="text-muted">เมื่อลูกค้าทำการสั่งซื้อ จะแสดงที่นี่</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

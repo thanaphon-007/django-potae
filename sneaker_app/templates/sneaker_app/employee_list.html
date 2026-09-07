@@ -1,0 +1,65 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="fa-solid fa-users-gear me-2 text-success"></i>รายชื่อพนักงาน</h3>
+        <small class="text-muted">ทั้งหมด {{ employees.count }} คน</small>
+    </div>
+    {% if user.is_staff %}
+    <a href="{% url 'employee_create' %}" class="btn btn-success btn-pill-modern"><i class="fa-solid fa-plus me-1"></i>เพิ่มพนักงานใหม่</a>
+    {% endif %}
+</div>
+
+<div class="card card-app shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle table-app mb-0">
+                <thead>
+                    <tr>
+                        <th>ลำดับ</th>
+                        <th>รูปพนักงาน</th>
+                        <th>ชื่อ - นามสกุล</th>
+                        <th>ชื่อเล่น</th>
+                        <th>ตำแหน่ง</th>
+                        <th>เบอร์โทรศัพท์</th>
+                        <th>เงินเดือน (บาท)</th>
+                        {% if user.is_staff %}<th class="text-center">จัดการ</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for emp in employees %}
+                    <tr>
+                        <td class="text-muted">{{ forloop.counter }}</td>
+                        <td>
+                            {% if emp.photo %}
+                                <img src="{{ emp.photo.url }}" alt="{{ emp.first_name }}" width="90" height="90" style="object-fit: cover;" class="rounded-circle border border-2" loading="lazy">
+                            {% else %}
+                                <span class="stat-icon bg-light text-dark" style="width: 44px; height: 44px; border-radius: 50%;"><i class="fa-solid fa-user"></i></span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-semibold">{{ emp.first_name }} {{ emp.last_name }}</td>
+                        <td>{{ emp.nickname|default:"-" }}</td>
+                        <td><span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3">{{ emp.get_position_display }}</span></td>
+                        <td><i class="fa-solid fa-phone me-1 text-muted"></i>{{ emp.phone }}</td>
+                        <td class="fw-bold">{{ emp.salary|floatformat:2 }}</td>
+                        {% if user.is_staff %}
+                        <td class="text-center">
+                            <div class="d-flex gap-1 justify-content-center">
+                            <a href="{% url 'employee_update' emp.pk %}" class="btn btn-sm btn-warning btn-action"><i class="fa-solid fa-pen"></i></a>
+                            <a href="{% url 'employee_delete' emp.pk %}" class="btn btn-sm btn-danger btn-action"><i class="fa-solid fa-trash"></i></a>
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if user.is_staff %}8{% else %}7{% endif %}" class="text-center py-5 text-muted"><i class="fa-solid fa-people-group me-2"></i>ยังไม่มีข้อมูลพนักงานในระบบ</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

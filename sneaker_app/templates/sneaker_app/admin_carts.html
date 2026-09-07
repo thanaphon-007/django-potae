@@ -1,0 +1,77 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}ตะกร้าลูกค้า | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-cart-flatbed me-2 text-warning"></i>ตะกร้าสินค้าของลูกค้า</h3>
+    <div class="d-flex gap-2 flex-wrap">
+        <form class="d-flex" method="GET" action="">
+            <div class="input-group">
+                <input class="form-control" type="search" name="q" placeholder="ค้นหาชื่อผู้ใช้..." value="{{ query }}">
+                <button class="btn btn-dark" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                {% if query %}<a href="{% url 'admin_carts' %}" class="btn btn-outline-secondary"><i class="fa-solid fa-xmark"></i></a>{% endif %}
+            </div>
+        </form>
+        <a href="{% url 'home' %}" class="btn btn-outline-dark btn-pill-modern px-3"><i class="fa-solid fa-house me-1"></i>หน้าหลัก</a>
+    </div>
+</div>
+
+{% if query %}
+<div class="alert alert-info rounded-4 py-2">
+    ผลการค้นหาสำหรับ "<strong>{{ query }}</strong>" {% if carts %}(พบ {{ carts|length }} คน){% else %}(ไม่พบผู้ใช้){% endif %}
+</div>
+{% endif %}
+
+{% if carts %}
+{% for cart in carts %}
+<div class="card card-app shadow-sm mb-4">
+    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span class="fw-bold"><i class="fa-solid fa-user me-2 text-warning"></i>{{ cart.user.username }}</span>
+        <span class="badge bg-warning text-dark fs-6 rounded-pill">ยอดรวม {{ cart.total }} บาท</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle table-app mb-0">
+            <thead>
+                <tr>
+                    <th>รูปภาพ</th>
+                    <th>สินค้า</th>
+                    <th>ราคา/คู่</th>
+                    <th class="text-center">จำนวน</th>
+                    <th class="text-end">รวม</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart.items %}
+                <tr>
+                    <td style="width: 80px;">
+                        {% if item.sneaker.image %}
+                            <img src="{{ item.sneaker.image.url }}" alt="{{ item.sneaker.name }}" width="90" height="90" style="object-fit: contain;" class="rounded border" loading="lazy">
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ item.sneaker.name }}</strong><br>
+                        <small class="text-muted">{{ item.sneaker.brand }} | ไซส์ {{ item.sneaker.size }} US</small>
+                    </td>
+                    <td class="fw-semibold">{{ item.sneaker.price }} บาท</td>
+                    <td class="text-center fw-bold">{{ item.quantity }}</td>
+                    <td class="text-end fw-bold">{{ item.total_price }} บาท</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div class="card card-app shadow-sm">
+    <div class="card-body text-center py-5">
+        <span class="stat-icon bg-light text-dark mx-auto" style="width: 90px; height: 90px; border-radius: 24px; font-size: 2.8rem;"><i class="fa-solid fa-cart-flatbed"></i></span>
+        <h4 class="mt-4 fw-bold text-dark">ยังไม่มีลูกค้าเพิ่มสินค้าลงตะกร้า</h4>
+        <p class="text-muted">เมื่อลูกค้าใส่สินค้าลงตะกร้า จะแสดงที่นี่</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}สั่งซื้อสำเร็จ | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-3">
+    <div class="col-md-8">
+        <div class="card card-app shadow-lg text-center text-success border-0 position-relative overflow-hidden">
+            <div class="card-body p-5">
+                <span class="stat-icon bg-success-subtle text-success mx-auto" style="width: 96px; height: 96px; border-radius: 50%; font-size: 2.6rem;"><i class="fa-solid fa-check"></i></span>
+                <h2 class="fw-bold mt-4">สั่งซื้อสำเร็จ!</h2>
+                <p class="text-muted">ขอบคุณสำหรับการสั่งซื้อของคุณ</p>
+
+                <div class="alert alert-info rounded-4 mt-4 mx-auto" style="max-width: 380px;">
+                    <div class="d-flex justify-content-between"><strong>หมายเลขออเดอร์:</strong> #{{ order.id }}</div>
+                    <div class="d-flex justify-content-between"><strong>สถานะ:</strong> {{ order.get_status_display }}</div>
+                    <div class="d-flex justify-content-between"><strong>วันที่:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</div>
+                </div>
+
+                <div class="card bg-light border-0 text-start mt-4">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark"><i class="fa-solid fa-truck-fast me-2 text-success"></i>ข้อมูลการจัดส่ง</h6>
+                        <p class="mb-1"><i class="fa-solid fa-user me-2 text-muted"></i><strong>{{ order.first_name }} {{ order.last_name }}</strong></p>
+                        <p class="mb-1"><i class="fa-solid fa-location-dot me-2 text-muted"></i>{{ order.address }} {{ order.postal_code }}</p>
+                        <p class="mb-0"><i class="fa-solid fa-phone me-2 text-muted"></i>{{ order.phone }}</p>
+                    </div>
+                </div>
+
+                <div class="card bg-light border-0 text-start mt-3">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark"><i class="fa-solid fa-cart-shopping me-2 text-primary"></i>รายการสินค้า</h6>
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>สินค้า</th>
+                                    <th class="text-center">จำนวน</th>
+                                    <th class="text-end">รวม</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>{{ item.sneaker.name }}</td>
+                                    <td class="text-center">{{ item.quantity }}</td>
+                                    <td class="text-end fw-bold">{{ item.total_price }} บาท</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light fw-semibold">
+                                    <td colspan="2" class="text-end fw-bold">ยอดรวม</td>
+                                    <td class="text-end fw-bold text-danger">{{ order.total_price }} บาท</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{% url 'sneaker_list' %}" class="btn btn-accent px-4"><i class="fa-solid fa-cart-plus me-1"></i>ซื้อสินค้าต่อ</a>
+                    <a href="{% url 'my_orders' %}" class="btn btn-outline-dark btn-pill-modern px-4"><i class="fa-solid fa-box-open me-1"></i>ดูคำสั่งซื้อของฉัน</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

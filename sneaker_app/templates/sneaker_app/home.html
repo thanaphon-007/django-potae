@@ -1,0 +1,201 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}หน้าหลัก | Sneaker Store{% endblock %}
+
+{% block content %}
+<!-- ===== Hero Section ===== -->
+<div class="hero-sneaker text-white p-5 mb-5 shadow-lg">
+    <div class="row align-items-center hero-content">
+        <div class="col-lg-8">
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill mb-3"><i class="fa-solid fa-bolt me-1"></i>JUST DO IT. STORE HUB</span>
+            <h1 class="hero-title display-3 mb-2">
+                {% if user.is_authenticated %}สวัสดี, {{ user.username }}!
+                {% else %}RUN THE STORE.{% endif %}
+            </h1>
+            <p class="text-secondary fs-5 mb-4">
+                {% if user.is_staff %}ศูนย์กลางควบคุมสต็อก แคตตาล็อกสนีกเกอร์ และทีมงานร้านค้าแบบครบวงจร
+                {% else %}เลือกสรรสนีกเกอร์แท้ ไซส์ครบ จัดส่งทั่วประเทศ{% endif %}
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                {% if user.is_staff %}
+                <a href="{% url 'sneaker_create' %}" class="btn-accent"><i class="fa-solid fa-plus me-1"></i>เพิ่มสินค้าใหม่</a>
+                <a href="{% url 'stock_list' %}" class="btn btn-outline-light btn-pill-modern px-4 py-2"><i class="fa-solid fa-boxes-stacked me-1"></i>เช็กยอดสต็อก</a>
+                {% else %}
+                <a href="{% url 'sneaker_list' %}" class="btn-accent"><i class="fa-solid fa-cart-shopping me-1"></i>เลือกซื้อสินค้า</a>
+                <a href="{% url 'cart_list' %}" class="btn btn-outline-light btn-pill-modern px-4 py-2"><i class="fa-solid fa-basket-shopping me-1"></i>ดูตะกร้า</a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-4 text-center d-none d-lg-block">
+            <span style="font-size: 8.5rem; filter: drop-shadow(0 18px 20px rgba(255,87,34,.35));">👟</span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== สถิติ ===== -->
+{% if user.is_authenticated %}
+<div class="row g-4 mb-5">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-dark text-white"><i class="fa-solid fa-shoe-prints"></i></div>
+                <div>
+                    <div class="fs-4 fw-bold">{{ total_sneakers }}</div>
+                    <small class="text-muted">สินค้าในคลัง</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info text-white"><i class="fa-solid fa-box"></i></div>
+                <div>
+                    <div class="fs-4 fw-bold">{{ total_stock }}</div>
+                    <small class="text-muted">รายการสต็อก</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success text-white"><i class="fa-solid fa-users"></i></div>
+                <div>
+                    <div class="fs-4 fw-bold">{{ total_employees }}</div>
+                    <small class="text-muted">พนักงาน</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning text-dark"><i class="fa-solid fa-rocket"></i></div>
+                <div>
+                    {% if user.is_staff %}
+                    <div class="fs-4 fw-bold">{{ total_orders }}</div>
+                    <small class="text-muted">คำสั่งซื้อทั้งหมด</small>
+                    {% else %}
+                    <div class="fs-4 fw-bold">{{ my_orders_count }}</div>
+                    <small class="text-muted">คำสั่งซื้อของฉัน</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ===== หมวดหมู่ระบบ ===== -->
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <span class="nike-tag text-uppercase text-muted fw-bold">Management Console</span>
+        <h3 class="fw-bold m-0 text-dark">หมวดหมู่ระบบจัดการ</h3>
+    </div>
+</div>
+
+<div class="row g-4 mb-2">
+    <!-- 1. รองเท้า -->
+    <div class="col-md-4">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge bg-dark text-white rounded-pill px-3 py-2 fw-bold">01 / PRODUCTS</span>
+                    <span class="stat-icon bg-light text-dark"><i class="fa-solid fa-shoe-prints"></i></span>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">สินค้าและรองเท้า</h4>
+                <p class="text-muted small flex-grow-1">จัดการข้อมูลรองเท้า อัปเดตรูปภาพ รายละเอียดไซส์ และการตั้งราคาจำหน่าย</p>
+                <div class="pt-3 border-top mt-auto">
+                    <a href="{% url 'sneaker_list' %}" class="btn btn-dark w-100 btn-pill-modern py-2">เข้าสู่รายการสินค้า <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_staff %}
+    <!-- 2. สต็อก -->
+    <div class="col-md-4">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge bg-info text-dark rounded-pill px-3 py-2 fw-bold">02 / INVENTORY</span>
+                    <span class="stat-icon bg-info-subtle text-info-emphasis"><i class="fa-solid fa-boxes-stacked"></i></span>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">ระบบจัดการสต็อก</h4>
+                <p class="text-muted small flex-grow-1">บันทึกยอดรับเข้า-จ่ายออก ตรวจสอบสินค้าคงเหลือแบบ Real-time</p>
+                <div class="pt-3 border-top mt-auto">
+                    <a href="{% url 'stock_list' %}" class="btn btn-outline-dark w-100 btn-pill-modern py-2">ตรวจสอบคลังสต็อก <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. พนักงาน -->
+    <div class="col-md-4">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge bg-success text-white rounded-pill px-3 py-2 fw-bold">03 / EMPLOYEES</span>
+                    <span class="stat-icon bg-success-subtle text-success-emphasis"><i class="fa-solid fa-users-gear"></i></span>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">บุคลากรและทีมงาน</h4>
+                <p class="text-muted small flex-grow-1">ฐานข้อมูลพนักงาน ประจำกะงาน ค่าจ้าง และข้อมูลสำหรับฝ่ายปฏิบัติการ</p>
+                <div class="pt-3 border-top mt-auto">
+                    <a href="{% url 'employee_list' %}" class="btn btn-outline-dark w-100 btn-pill-modern py-2">จัดการรายชื่อพนักงาน <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. ตะกร้าลูกค้า -->
+    <div class="col-md-4">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-bold">04 / CARTS</span>
+                    <span class="stat-icon bg-warning-subtle text-warning-emphasis"><i class="fa-solid fa-cart-plus"></i></span>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">ตะกร้าสินค้าลูกค้า</h4>
+                <p class="text-muted small flex-grow-1">ตรวจสอบสินค้าที่ลูกค้าเลือกไว้ในตะกร้าแบบเรียลไทม์</p>
+                <div class="pt-3 border-top mt-auto">
+                    <a href="{% url 'admin_carts' %}" class="btn btn-outline-dark w-100 btn-pill-modern py-2">ดูตะกร้าลูกค้า <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. คำสั่งซื้อลูกค้า -->
+    <div class="col-md-4">
+        <div class="card card-app card-hover h-100">
+            <div class="card-body p-4 d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <span class="badge bg-danger text-white rounded-pill px-3 py-2 fw-bold">05 / ORDERS</span>
+                    <span class="stat-icon bg-danger-subtle text-danger-emphasis"><i class="fa-solid fa-clipboard-list"></i></span>
+                </div>
+                <h4 class="fw-bold text-dark mb-2">คำสั่งซื้อลูกค้า</h4>
+                <p class="text-muted small flex-grow-1">ติดตามคำสั่งซื้อ ข้อมูลจัดส่ง และอัปเดตสถานะสินค้า</p>
+                <div class="pt-3 border-top mt-auto">
+                    <a href="{% url 'admin_orders' %}" class="btn btn-outline-dark w-100 btn-pill-modern py-2">จัดการคำสั่งซื้อ <i class="fa-solid fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if user.is_staff %}
+<!-- ===== Quick Operations ===== -->
+<div class="mt-5 p-4 rounded-4 bg-white border d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-zap me-2 text-warning"></i>Quick Operations</h6>
+        <small class="text-muted">ทางลัดการสร้างรายการใหม่อย่างรวดเร็ว</small>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'sneaker_create' %}" class="btn btn-sm btn-dark btn-pill-modern px-3 py-2"><i class="fa-solid fa-plus me-1"></i>เพิ่มรุ่นรองเท้า</a>
+        <a href="{% url 'stock_create' %}" class="btn btn-sm btn-info btn-pill-modern px-3 py-2"><i class="fa-solid fa-plus me-1"></i>นำเข้าสต็อก</a>
+        <a href="{% url 'employee_create' %}" class="btn btn-sm btn-success btn-pill-modern px-3 py-2"><i class="fa-solid fa-plus me-1"></i>เพิ่มพนักงาน</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

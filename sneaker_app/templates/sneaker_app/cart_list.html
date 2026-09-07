@@ -1,0 +1,75 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-cart-shopping me-2 text-primary"></i>ตะกร้าสินค้า</h3>
+    <a href="{% url 'sneaker_list' %}" class="btn btn-outline-dark btn-pill-modern px-4"><i class="fa-solid fa-arrow-left me-1"></i>เลือกซื้อสินค้าต่อ</a>
+</div>
+
+<div class="card card-app shadow-sm">
+    <div class="card-body">
+        {% if items %}
+        <div class="table-responsive">
+        <table class="table table-hover align-middle table-app mb-0">
+            <thead>
+                <tr>
+                    <th>รูปภาพ</th>
+                    <th>สินค้า</th>
+                    <th>ราคา/คู่</th>
+                    <th>จำนวน</th>
+                    <th>รวม</th>
+                    <th>ลบ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        {% if item.sneaker.image %}
+                            <img src="{{ item.sneaker.image.url }}" alt="{{ item.sneaker.name }}" width="90" height="90" style="object-fit: contain;" class="rounded border" loading="lazy">
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ item.sneaker.name }}</strong><br>
+                        <small class="text-muted">{{ item.sneaker.brand }} | ไซส์ {{ item.sneaker.size }} US</small>
+                    </td>
+                    <td class="fw-semibold">{{ item.sneaker.price }} บาท</td>
+                    <td style="width: 190px;">
+                        <form method="POST" action="{% url 'update_cart_quantity' item.pk %}" class="d-flex align-items-center gap-2">
+                            {% csrf_token %}
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control form-control-sm text-center" style="width: 80px;">
+                            <button type="submit" class="btn btn-sm btn-dark btn-action"><i class="fa-solid fa-rotate me-1"></i>อัปเดต</button>
+                        </form>
+                    </td>
+                    <td class="fw-bold">{{ item.total_price }} บาท</td>
+                    <td>
+                        <a href="{% url 'remove_from_cart' item.pk %}" class="btn btn-sm btn-danger btn-action"><i class="fa-solid fa-trash"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="table-light fw-semibold">
+                    <td colspan="4" class="text-end">รวมทั้งสิ้น</td>
+                    <td class="fw-bold text-danger fs-5">{{ total }} บาท</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+        </div>
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'checkout' %}" class="btn btn-accent btn-lg px-5"><i class="fa-solid fa-receipt me-1"></i>ดำเนินการสั่งซื้อ</a>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <span class="stat-icon bg-light text-dark mx-auto" style="width: 90px; height: 90px; border-radius: 24px; font-size: 3rem;"><i class="fa-solid fa-cart-arrow-down"></i></span>
+            <h4 class="mt-4 text-dark fw-bold">ตะกร้าของคุณว่างเปล่า</h4>
+            <p class="text-muted">ลองเพิ่มสินค้าเข้าไปดูสิ!</p>
+            <a href="{% url 'sneaker_list' %}" class="btn btn-accent mt-2 px-5"><i class="fa-solid fa-shoe-prints me-1"></i>ไปเลือกซื้อสินค้า</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

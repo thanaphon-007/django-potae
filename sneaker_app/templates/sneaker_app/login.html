@@ -1,0 +1,42 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}เข้าสู่ระบบ | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-5 col-lg-4">
+        <div class="card card-app shadow-lg p-4">
+            <div class="text-center mb-4">
+                <span class="stat-icon bg-dark text-white mx-auto" style="width: 64px; height: 64px; border-radius: 18px; font-size: 1.8rem;"><i class="fa-solid fa-right-to-bracket"></i></span>
+                <h3 class="fw-bold text-dark mt-3 mb-1">เข้าสู่ระบบ</h3>
+                <p class="text-muted small mb-0">ยินดีต้อนรับกลับสู่ Sneaker Store</p>
+            </div>
+
+            <form method="POST" class="form-app">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold small mb-1">ชื่อผู้ใช้ (Username)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-user text-muted"></i></span>
+                        <input type="text" name="username" class="form-control" required autofocus>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold small mb-1">รหัสผ่าน (Password)</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fa-solid fa-lock text-muted"></i></span>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-accent w-100 py-2"><i class="fa-solid fa-right-to-bracket me-1"></i>เข้าสู่ระบบ</button>
+            </form>
+
+            <div class="text-center mt-4 pt-3 border-top">
+                <small class="text-muted">ยังไม่มีบัญชี?
+                    <a href="{% url 'register' %}" class="fw-bold text-dark text-decoration-none">สมัครสมาชิกที่นี่</a>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
