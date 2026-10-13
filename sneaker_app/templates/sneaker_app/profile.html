@@ -1,0 +1,103 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}โปรไฟล์ของฉัน | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-id-card me-2 text-primary"></i>โปรไฟล์ของฉัน</h3>
+    <a href="{% url 'sneaker_list' %}" class="btn btn-outline-dark btn-pill-modern px-4"><i class="fa-solid fa-shoe-prints me-1"></i>ไปเลือกซื้อสินค้า</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card card-app shadow-sm text-center p-4 h-100">
+            <div class="mx-auto position-relative mb-3">
+                {% if profile.avatar %}
+                    <img src="{{ profile.avatar.url }}" alt="avatar" style="width: 130px; height: 130px; object-fit: cover; border-radius: 50%; border: 4px solid #ff5722;" class="shadow">
+                {% else %}
+                    <div style="width: 130px; height: 130px; border-radius: 50%; border: 4px solid #ff5722; display:flex; align-items:center; justify-content:center; font-size: 3rem; background: #f0f0f5; color: #666;">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                {% endif %}
+                <span class="badge bg-warning text-dark rounded-pill position-absolute" style="bottom: 6px; right: 6px;"><i class="fa-solid fa-camera"></i></span>
+            </div>
+            <h4 class="fw-bold text-dark mb-1">{{ user.username }}</h4>
+            <div class="mb-3">
+                {% if user.is_staff %}
+                    <span class="badge bg-warning text-dark rounded-pill"><i class="fa-solid fa-shield-halved me-1"></i>แอดมิน</span>
+                {% else %}
+                    <span class="badge bg-primary rounded-pill"><i class="fa-solid fa-user me-1"></i>สมาชิก</span>
+                {% endif %}
+            </div>
+            <p class="text-muted small mb-3">
+                {% if user.first_name or user.last_name %}
+                    <i class="fa-solid fa-user-tag me-1"></i>{{ user.first_name }} {{ user.last_name }}<br>
+                {% endif %}
+                <i class="fa-solid fa-envelope me-1"></i>{{ user.email|default:"-ไม่มีอีเมล-" }}<br>
+                <i class="fa-solid fa-calendar-plus me-1"></i>สมัครสมาชิกเมื่อ {{ user.date_joined|date:"d/m/Y" }}
+            </p>
+            <hr>
+            <div class="row text-center">
+                <div class="col-6">
+                    <div class="fw-bold fs-4 text-dark">{{ orders_count }}</div>
+                    <small class="text-muted">คำสั่งซื้อ</small>
+                </div>
+                <div class="col-6">
+                    <div class="fw-bold fs-4 text-dark">{{ user.has_usable_password|yesno:"ปกติ,-" }}</div>
+                    <small class="text-muted">รหัสผ่าน</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="card card-app shadow-sm">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fa-solid fa-user-pen me-2 text-warning"></i>แก้ไขข้อมูลส่วนตัว</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" class="form-app">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small mb-1">{{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}</label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text text-muted" style="font-size: 0.75rem;">{{ field.help_text|safe }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-accent px-4 flex-grow-1"><i class="fa-solid fa-floppy-disk me-1"></i>บันทึกข้อมูล</button>
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-pill-modern px-4"><i class="fa-solid fa-xmark me-1"></i>ยกเลิก</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card card-app shadow-sm mt-4 border-start border-4 border-warning">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="fa-solid fa-circle-info fs-2 text-primary"></i>
+                <div>
+                    <h6 class="fw-bold mb-1">สิทธิ์การใช้งานของคุณ</h6>
+                    {% if user.is_staff %}
+                        <p class="text-muted small mb-0">คุณเป็นผู้ดูแลระบบ คุณสามารถจัดการรองเท้า สต็อก พนักงาน ตะกร้า และคำสั่งซื้อของลูกค้าได้ทั้งหมด รวมถึงเข้าถึงหน้า Admin ของ Django</p>
+                    {% else %}
+                        <p class="text-muted small mb-0">คุณเป็นสมาชิกทั่วไป คุณสามารถดูสินค้า เพิ่มลงตะกร้า สั่งซื้อ และดูประวัติคำสั่งซื้อของตนเองได้</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('.form-app input, .form-app select, .form-app textarea').forEach(el => {
+        if(el.type !== 'submit' && el.type !== 'file') el.classList.add('form-control');
+    });
+    document.querySelectorAll('.form-app input[type="file"]').forEach(el => el.classList.add('form-control'));
+</script>
+{% endblock %}

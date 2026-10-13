@@ -6,11 +6,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from functools import wraps
 
-from .models import Sneaker, Stock, Employee, CartItem, Profile, Order, OrderItem
-from .forms import SneakerForm, StockForm, EmployeeForm, RegisterForm, CheckoutForm
+from .models import Sneaker, Stock, Employee, CartItem, Profile, Order, OrderItem, StoreLocation
+from .forms import SneakerForm, StockForm, EmployeeForm, RegisterForm, CheckoutForm, UserProfileForm
 
 
 def admin_required(view_func):
@@ -378,6 +378,75 @@ def admin_order_delete(request, pk):
     return render(request, 'sneaker_app/confirm_delete.html', {'item_name': f"ออเดอร์ #{order.id} ของ {order.user.username}", 'cancel_url': 'admin_orders'})
 
 
+# === จัดการสิทธิ์ผู้ใช้ (Admin) ===
+@admin_required
+def admin_users(request):
+    query = request.GET.get('q', '').strip()
+    role = request.GET.get('role', '').strip()
+    users_list = User.objects.all().order_by('-date_joined')
+    if query:
+        users_list = users_list.filter(Q(username__icontains=query) | Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(email__icontains=query))
+    if role == 'admin':
+        users_list = users_list.filter(is_staff=True)
+    elif role == 'member':
+        users_list = users_list.filter(is_staff=False)
+    paginator = Paginator(users_list, 5)
+    users = paginator.get_page(request.GET.get('page'))
+    return render(request, 'sneaker_app/admin_users.html', {'users': users, 'query': query, 'role': role})
+
+
+@admin_required
+def update_user_role(request, user_id):
+    target = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        new_role = request.POST.get('role')
+        if new_role not in ['admin', 'member']:
+            messages.error(request, "สิทธิ์ไม่ถูกต้อง")
+            return redirect('admin_users')
+        if target.pk == request.user.pk:
+            messages.error(request, "ไม่สามารถเปลี่ยนสิทธิ์ของตัวเองผ่านหน้านี้ได้ (ห้ามถอดสิทธิ์ตัวเอง)")
+            return redirect('admin_users')
+        if new_role == 'admin':
+            target.is_staff = True
+            target.save()
+            messages.success(request, f"เลื่อนสิทธิ์ {target.username} เป็นแอดมินแล้ว")
+        else:
+            target.is_staff = False
+            target.save()
+            messages.success(request, f"ปรับสิทธิ์ {target.username} เป็นสมาชิกแล้ว")
+    return redirect('admin_users')
+
+
+@admin_required
+def toggle_user_active(request, user_id):
+    target = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        if target.pk == request.user.pk:
+            messages.error(request, "ไม่สามารถปิดใช้งานบัญชีของตัวเองได้")
+            return redirect('admin_users')
+        target.is_active = not target.is_active
+        target.save()
+        if target.is_active:
+            messages.success(request, f"เปิดใช้งานบัญชี {target.username} แล้ว")
+        else:
+            messages.success(request, f"ปิดใช้งานบัญชี {target.username} แล้ว")
+    return redirect('admin_users')
+
+
+@admin_required
+def delete_user(request, user_id):
+    target = get_object_or_404(User, pk=user_id)
+    if target.pk == request.user.pk:
+        messages.error(request, "ไม่สามารถลบบัญชีของตัวเองได้")
+        return redirect('admin_users')
+    if request.method == 'POST':
+        username = target.username
+        target.delete()
+        messages.success(request, f"ลบบัญชี @{username} และข้อมูลทั้งหมด (คำสั่งซื้อ/ตะกร้า/โปรไฟล์) แล้ว")
+        return redirect('admin_users')
+    return render(request, 'sneaker_app/confirm_delete.html', {'item_name': f"บัญชีผู้ใช้ @{target.username}", 'cancel_url': 'admin_users'})
+
+
 # === ระบบสมาชิก (Authentication) ===
 def register_view(request):
     if request.user.is_authenticated:
@@ -419,3 +488,58 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+
+# === โปรไฟล์ผู้ใช้ ===
+@login_required(login_url='/login/')
+def profile_view(request):
+    profile = getattr(request.user, 'profile', None)
+    if profile is None:
+        profile = Profile.objects.create(user=request.user)
+
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            avatar = form.cleaned_data.get('avatar')
+            if avatar:
+                profile.avatar = avatar
+                profile.save()
+            messages.success(request, "อัปเดตโปรไฟล์เรียบร้อยแล้ว")
+            return redirect('profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+
+    orders_count = Order.objects.filter(user=request.user).count()
+    return render(request, 'sneaker_app/profile.html', {
+        'form': form,
+        'profile': profile,
+        'orders_count': orders_count,
+    })
+
+
+# === แผนที่สาขาร้านค้า (Google Maps) ===
+def store_map(request):
+    from django.conf import settings
+    stores = StoreLocation.objects.filter(is_active=True).order_by('-id')
+    default_lat = float(stores[0].latitude) if stores else 13.7563
+    default_lng = float(stores[0].longitude) if stores else 100.5018
+    default_map_url = (
+        f'https://maps.google.com/maps?q={default_lat},{default_lng}&z=16&output=embed'
+    )
+    return render(request, 'sneaker_app/store_map.html', {
+        'api_key': settings.GOOGLE_MAPS_API_KEY,
+        'stores': [store.to_dict() for store in stores],
+        'default_map_url': default_map_url,
+    })
+
+## === API JSON สำหรับสาขาร้านค้า ===
+def store_api(request):
+    """API JSON: รายชื่อสาขาร้านค้า พร้อมพิกัด lat/lng สำหรับแสดงบน Google Maps"""
+    stores = StoreLocation.objects.filter(is_active=True).order_by('name')
+    data = {
+        'status': 'success',
+        'count': stores.count(),
+        'stores': [store.to_dict() for store in stores],
+    }
+    return JsonResponse(data)

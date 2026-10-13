@@ -1,0 +1,137 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}แผนที่สาขาร้านค้า | Sneaker Store{% endblock %}
+
+{% block content %}
+<style>
+    .map-store {
+        white-space: normal;
+        overflow-wrap: normal;
+        word-break: normal;
+        line-break: normal;
+        min-width: 0;
+    }
+    .map-store .store-name {
+        white-space: normal;
+        overflow-wrap: normal;
+        word-break: normal;
+        line-height: 1.5;
+    }
+    .map-store .flex-grow-1 {
+        margin: 0 auto;
+        min-width: 0;
+        width: 100%;
+    }
+    .map-store .map-detail {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .map-store.active {
+        background: #fff3ee;
+        border-left: 4px solid #ff5722;
+    }
+    #storeList {
+        max-height: 560px;
+        overflow-y: auto;
+    }
+</style>
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <span class="badge bg-dark text-white rounded-pill px-3 py-1 fw-bold text-uppercase" style="letter-spacing:1px;">
+            <i class="fa-solid fa-location-dot me-1 text-warning"></i>Store Locator
+        </span>
+        <h3 class="fw-bold m-0 text-dark mt-2" style="letter-spacing:.5px;">
+            <i class="fa-solid fa-map-location-dot me-2 text-danger"></i>สาขาร้านค้า
+        </h3>
+        <small class="text-muted">เลือกสาขาในรายการเพื่อดูตำแหน่งที่แน่นอนบนแผนที่ หรือกดที่แผนที่เพื่อซูม/ขยาย</small>
+    </div>
+    {% if stores %}
+    <span class="badge bg-success bg-gradient text-white rounded-pill px-3 py-2 fw-bold">
+        <i class="fa-solid fa-store me-1"></i>{{ stores|length }} สาขา
+    </span>
+    {% endif %}
+</div>
+
+{% if stores %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card card-app overflow-hidden border-0">
+            <iframe id="mapFrame"
+                    src="{{ default_map_url }}"
+                    width="100%" height="560" style="border:0;"
+                    loading="lazy"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-app">
+            <div class="card-body">
+                <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-location-dot me-2 text-danger"></i>สาขาทั้งหมด ({{ stores|length }})</h5>
+                <div id="storeList" class="list-group list-group-flush">
+                    <a class="list-group-item list-group-item-action d-flex align-items-start gap-2 p-2 map-store active"
+                       data-map-url="https://maps.google.com/maps?q={{ stores.0.latitude }},{{ stores.0.longitude }}&z=16&output=embed">
+                        <span class="badge bg-danger rounded-circle mt-1">1</span>
+                        <div class="flex-grow-1">
+                            {% if stores.0.image_url %}
+                            <img src="{{ stores.0.image_url }}" style="width:100%; height:130px; object-fit:cover; border-radius:10px; margin-bottom:8px;" class="d-block">
+                            {% endif %}
+                            <strong class="d-block text-dark mb-1 store-name">{{ stores.0.name }}</strong>
+                            <small class="text-muted d-block map-detail mb-1">{{ stores.0.address }}</small>
+                            <small class="text-muted d-block">🕐 {{ stores.0.opening_hours|default:'- ไม่ระบุ -' }}</small>
+                            <small class="text-muted d-block">📞 {{ stores.0.phone|default:'- ไม่ระบุ -' }}</small>
+                            <a href="{{ stores.0.maps_url }}" target="_blank" class="btn btn-sm btn-accent mt-2">
+                                <i class="fa-solid fa-map-location-dot me-1"></i>เปิดใน Google Maps
+                            </a>
+                        </div>
+                    </a>
+                    {% for store in stores|slice:"1:" %}
+                    <a class="list-group-item list-group-item-action d-flex align-items-start gap-2 p-2 map-store"
+                       data-map-url="https://maps.google.com/maps?q={{ store.latitude }},{{ store.longitude }}&z=16&output=embed">
+                        <span class="badge bg-danger rounded-circle mt-1">{{ forloop.counter|add:1 }}</span>
+                        <div class="flex-grow-1">
+                            {% if store.image_url %}
+                            <img src="{{ store.image_url }}" style="width:100%; height:130px; object-fit:cover; border-radius:10px; margin-bottom:8px;" class="d-block">
+                            {% endif %}
+                            <strong class="d-block text-dark mb-1 store-name">{{ store.name }}</strong>
+                            <small class="text-muted d-block map-detail mb-1">{{ store.address }}</small>
+                            <small class="text-muted d-block">🕐 {{ store.opening_hours|default:'- ไม่ระบุ -' }}</small>
+                            <small class="text-muted d-block">📞 {{ store.phone|default:'- ไม่ระบุ -' }}</small>
+                            <a href="{{ store.maps_url }}" target="_blank" class="btn btn-sm btn-accent mt-2">
+                                <i class="fa-solid fa-map-location-dot me-1"></i>เปิดใน Google Maps
+                            </a>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card card-app">
+    <div class="card-body p-5 text-center">
+        <i class="fa-solid fa-store text-warning" style="font-size: 3rem;"></i>
+        <h4 class="fw-bold mt-3 text-dark">ยังไม่มีข้อมูลสาขาร้านค้า</h4>
+        <p class="text-muted mb-0">กรุณาเพิ่มสาขาที่หน้า <code>/admin/</code> → Store Locations</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.map-store').forEach(el => {
+        el.addEventListener('click', e => {
+            const isInnerLink = e.target.closest('a[target="_blank"]');
+            if (isInnerLink) return;
+            document.querySelectorAll('.map-store').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+            document.getElementById('mapFrame').src = el.dataset.mapUrl;
+            document.getElementById('mapFrame').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+    });
+</script>
+{% endblock %}

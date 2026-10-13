@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Sneaker, Stock, CartItem, Profile, Order, OrderItem
+from django.utils.html import format_html
+from .models import Sneaker, Stock, CartItem, Profile, Order, OrderItem, StoreLocation
 
 @admin.register(Sneaker)
 class SneakerAdmin(admin.ModelAdmin):
@@ -34,3 +35,15 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ('order', 'sneaker', 'quantity', 'price')
+
+@admin.register(StoreLocation)
+class StoreLocationAdmin(admin.ModelAdmin):
+    list_display = ('name', 'image_preview', 'address', 'latitude', 'longitude', 'phone', 'opening_hours', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'address', 'phone', 'opening_hours')
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="60" height="40" style="object-fit:cover; border-radius:6px;">', obj.image.url)
+        return '-'
+    image_preview.short_description = 'รูปภาพ'

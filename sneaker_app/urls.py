@@ -5,6 +5,10 @@ urlpatterns = [
     # หน้าหลัก
     path('', views.home, name='home'),
 
+    # แผนที่สาขาร้านค้า (Google Maps)
+    path('stores/map/', views.store_map, name='store_map'),
+    path('api/stores/', views.store_api, name='store_api'),
+
     # รองเท้า
     path('sneakers/', views.sneaker_list, name='sneaker_list'),
     path('sneakers/create/', views.sneaker_create, name='sneaker_create'),
@@ -39,7 +43,14 @@ urlpatterns = [
     path('admin-orders/update/<int:pk>/', views.update_order_status, name='update_order_status'),
     path('admin-orders/delete/<int:pk>/', views.admin_order_delete, name='admin_order_delete'),
 
+    # จัดการสิทธิ์ผู้ใช้
+    path('admin-users/', views.admin_users, name='admin_users'),
+    path('admin-users/role/<int:user_id>/', views.update_user_role, name='update_user_role'),
+    path('admin-users/active/<int:user_id>/', views.toggle_user_active, name='toggle_user_active'),
+    path('admin-users/delete/<int:user_id>/', views.delete_user, name='delete_user'),
+
     # ระบบสมาชิก (Authentication)
+    path('profile/', views.profile_view, name='profile'),
     path('login/', views.login_view, name='login'),
     path('register/', views.register_view, name='register'),
     path('logout/', views.logout_view, name='logout'),

@@ -214,6 +214,9 @@
                     <li class="nav-item">
                         <a class="nav-link {% if '/sneakers/' in request.path %}active{% endif %}" href="{% url 'sneaker_list' %}"><i class="fa-solid fa-shoe-prints me-1"></i>ข้อมูลรองเท้า</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if '/stores/map/' in request.path %}active{% endif %}" href="{% url 'store_map' %}"><i class="fa-solid fa-map-location-dot me-1"></i>สาขาร้านค้า</a>
+                    </li>
                     {% if user.is_authenticated and not user.is_staff %}
                     <li class="nav-item">
                         <a class="nav-link {% if '/cart/' in request.path %}active{% endif %}" href="{% url 'cart_list' %}"><i class="fa-solid fa-cart-shopping me-1"></i>ตะกร้าสินค้า</a>
@@ -233,6 +236,9 @@
                         <a class="nav-link {% if '/admin-carts/' in request.path %}active{% endif %}" href="{% url 'admin_carts' %}"><i class="fa-solid fa-cart-flatbed me-1"></i>ตะกร้าลูกค้า</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link {% if '/admin-users/' in request.path %}active{% endif %}" href="{% url 'admin_users' %}"><i class="fa-solid fa-user-shield me-1"></i>สิทธิ์ผู้ใช้</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link {% if '/admin-orders/' in request.path %}active{% endif %}" href="{% url 'admin_orders' %}"><i class="fa-solid fa-clipboard-list me-1"></i>คำสั่งซื้อลูกค้า</a>
                     </li>
                     {% endif %}
@@ -240,13 +246,13 @@
 
                 <div class="d-flex align-items-center gap-2 mt-2 mt-lg-0">
                     {% if user.is_authenticated %}
-                        <div class="user-chip d-flex align-items-center gap-2">
+                        <a href="{% url 'profile' %}" class="user-chip d-flex align-items-center gap-2 text-decoration-none" title="ไปที่โปรไฟล์">
                             {% if user_profile.avatar %}
                                 <img src="{{ user_profile.avatar.url }}" alt="avatar" class="avatar-circle">
                             {% endif %}
                             {% if user.is_staff %}<span class="badge bg-warning text-dark">Admin</span>{% endif %}
                             <span class="text-white small fw-semibold">{{ user.username }}</span>
-                        </div>
+                        </a>
                         <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="fa-solid fa-right-from-bracket me-1"></i>ออกจากระบบ</a>
                     {% else %}
                         <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm rounded-pill px-3"><i class="fa-solid fa-right-to-bracket me-1"></i>เข้าสู่ระบบ</a>
@@ -298,5 +304,6 @@
             setTimeout(() => { el.style.transition = 'opacity .3s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 4200);
         });
     </script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

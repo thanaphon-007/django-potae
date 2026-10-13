@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from .models import Sneaker, Stock, Employee, Profile, Order
 
 class SneakerForm(forms.ModelForm):
@@ -47,15 +48,60 @@ class RegisterForm(UserCreationForm):
         label="รูปโปรไฟล์",
         widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
     )
+    email = forms.EmailField(
+        required=True,
+        label="อีเมล",
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@email.com'})
+    )
 
     class Meta(UserCreationForm.Meta):
-        fields = ['username']
+        fields = ['username', 'email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['username'].widget.attrs.update({'class': 'form-control', 'placeholder': 'ชื่อผู้ใช้'})
         for name in ['password1', 'password2']:
             self.fields[name].widget.attrs.update({'class': 'form-control'})
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น")
+        return email
+
+class UserProfileForm(forms.ModelForm):
+    avatar = forms.ImageField(
+        required=False,
+        label="รูปโปรไฟล์",
+        widget=forms.ClearableFileInput(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อ'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'นามสกุล'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'example@email.com'}),
+        }
+        labels = {
+            'username': 'ชื่อผู้ใช้',
+            'first_name': 'ชื่อ',
+            'last_name': 'นามสกุล',
+            'email': 'อีเมล',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].required = True
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email', '').strip().lower()
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("อีเมลนี้ถูกใช้งานแล้ว กรุณาใช้อีเมลอื่น")
+        return email
+
 
 class CheckoutForm(forms.ModelForm):
     class Meta:
