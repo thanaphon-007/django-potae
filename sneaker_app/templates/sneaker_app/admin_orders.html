@@ -79,6 +79,40 @@
                 </table>
             </div>
         </div>
+        <div class="row g-3 mt-1 pt-3 border-top">
+            <div class="col-md-7">
+                <h6 class="fw-bold text-dark"><i class="fa-solid fa-wallet me-2 text-primary"></i>การชำระเงิน</h6>
+                <p class="small mb-1">
+                    <strong>วิธีชำระเงิน:</strong> {{ order.get_payment_method_display }} &nbsp;|&nbsp;
+                    <strong>สถานะ:</strong>
+                    {% if order.payment_status == 'paid' %}<span class="badge bg-success">{{ order.get_payment_status_display }}</span>
+                    {% elif order.payment_status == 'submitted' %}<span class="badge bg-info text-dark">{{ order.get_payment_status_display }}</span>
+                    {% elif order.payment_status == 'rejected' %}<span class="badge bg-danger">{{ order.get_payment_status_display }}</span>
+                    {% else %}<span class="badge bg-warning text-dark">{{ order.get_payment_status_display }}</span>{% endif %}
+                </p>
+                {% if order.paid_at %}<p class="small mb-1 text-muted"><i class="fa-regular fa-clock me-1"></i>ชำระเมื่อ {{ order.paid_at|date:"d/m/Y H:i" }}</p>{% endif %}
+                {% if order.payment_reference %}<p class="small mb-1 text-muted"><i class="fa-solid fa-comment me-1"></i>ลูกค้าแจ้ง: {{ order.payment_reference }}</p>{% endif %}
+                {% if order.payment_note %}<p class="small mb-0 text-muted"><i class="fa-solid fa-note-sticky me-1"></i>หมายเหตุ: {{ order.payment_note }}</p>{% endif %}
+            </div>
+            <div class="col-md-5 text-md-end">
+                {% if order.payment_slip %}
+                <a href="{{ order.payment_slip.url }}" target="_blank">
+                    <img src="{{ order.payment_slip.url }}" alt="สลิป" class="img-fluid rounded-3 border" style="max-height: 140px;">
+                    <div class="small text-muted mt-1"><i class="fa-solid fa-magnifying-glass me-1"></i>คลิกดูสลิปขนาดเต็ม</div>
+                </a>
+                {% else %}
+                <span class="text-muted small">— ยังไม่มีสลิป —</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if order.is_qr_payment and order.payment_status != 'paid' %}
+        <form method="POST" action="{% url 'admin_confirm_payment' order.pk %}" class="d-flex align-items-center gap-2 mt-3 pt-3 border-top flex-wrap">
+            {% csrf_token %}
+            <input type="text" name="payment_note" class="form-control form-control-sm" style="max-width: 260px;" placeholder="หมายเหตุถึงลูกค้า (ถ้ามี)">
+            <button type="submit" class="btn btn-sm btn-success btn-pill-modern px-4"><i class="fa-solid fa-circle-check me-1"></i>ยืนยันชำระแล้ว</button>
+            <button type="submit" formaction="{% url 'admin_reject_payment' order.pk %}" formnovalidate class="btn btn-sm btn-outline-danger btn-pill-modern px-4"><i class="fa-solid fa-circle-xmark me-1"></i>ปฏิเสธสลิป</button>
+        </form>
+        {% endif %}
         <form method="POST" action="{% url 'update_order_status' order.pk %}" class="d-flex align-items-center gap-2 mt-3 pt-3 border-top flex-wrap">
             {% csrf_token %}
             <label class="fw-semibold small mb-0 text-dark">เปลี่ยนสถานะ:</label>

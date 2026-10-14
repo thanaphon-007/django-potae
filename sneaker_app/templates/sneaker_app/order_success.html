@@ -11,11 +11,28 @@
                 <h2 class="fw-bold mt-4">สั่งซื้อสำเร็จ!</h2>
                 <p class="text-muted">ขอบคุณสำหรับการสั่งซื้อของคุณ</p>
 
-                <div class="alert alert-info rounded-4 mt-4 mx-auto" style="max-width: 380px;">
+                <div class="alert alert-info rounded-4 mt-4 mx-auto" style="max-width: 420px;">
                     <div class="d-flex justify-content-between"><strong>หมายเลขออเดอร์:</strong> #{{ order.id }}</div>
                     <div class="d-flex justify-content-between"><strong>สถานะ:</strong> {{ order.get_status_display }}</div>
+                    <div class="d-flex justify-content-between"><strong>วิธีชำระเงิน:</strong> {{ order.get_payment_method_display }}</div>
+                    <div class="d-flex justify-content-between">
+                        <strong>การชำระเงิน:</strong>
+                        {% if order.payment_status == 'paid' %}<span class="text-success fw-bold">{{ order.get_payment_status_display }}</span>
+                        {% elif order.payment_status == 'submitted' %}<span class="text-info fw-bold">{{ order.get_payment_status_display }}</span>
+                        {% elif order.payment_status == 'rejected' %}<span class="text-danger fw-bold">{{ order.get_payment_status_display }}</span>
+                        {% else %}<span class="text-warning fw-bold">{{ order.get_payment_status_display }}</span>{% endif %}
+                    </div>
                     <div class="d-flex justify-content-between"><strong>วันที่:</strong> {{ order.created_at|date:"d/m/Y H:i" }}</div>
                 </div>
+
+                {% if order.needs_payment %}
+                <div class="alert alert-warning rounded-4 mt-3 mx-auto text-start" style="max-width: 420px;">
+                    <i class="fa-solid fa-qrcode me-1"></i>
+                    {% if order.payment_status == 'submitted' %}อยู่ระหว่างรอแอดมินตรวจสอบการชำระเงินของคุณ
+                    {% else %}กรุณาชำระเงินเพื่อให้คำสั่งซื้อดำเนินการ{% endif %}
+                </div>
+                <a href="{% url 'payment_page' order.id %}" class="btn btn-accent px-4 mt-1"><i class="fa-solid fa-qrcode me-1"></i>ไปหน้าชำระเงิน</a>
+                {% endif %}
 
                 <div class="card bg-light border-0 text-start mt-4">
                     <div class="card-body">

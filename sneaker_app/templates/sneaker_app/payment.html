@@ -1,0 +1,127 @@
+{% extends 'sneaker_app/base.html' %}
+
+{% block title %}ชำระเงินออเดอร์ #{{ order.id }} | Sneaker Store{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h3 class="fw-bold mb-0"><i class="fa-solid fa-qrcode me-2 text-primary"></i>ชำระเงินออเดอร์ #{{ order.id }}</h3>
+    <a href="{% url 'my_orders' %}" class="btn btn-outline-secondary btn-pill-modern px-4"><i class="fa-solid fa-box-open me-1"></i>คำสั่งซื้อของฉัน</a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-app shadow-sm h-100">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    {% if order.payment_method == 'promptpay' %}<i class="fa-solid fa-qrcode me-2 text-warning"></i>สแกนจ่ายผ่านพร้อมเพย์
+                    {% else %}<i class="fa-solid fa-building-columns me-2 text-warning"></i>สแกนจ่ายผ่าน QR ธนาคาร{% endif %}
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <p class="text-muted mb-1">ยอดที่ต้องชำระ</p>
+                <h2 class="fw-bold text-danger mb-4">{{ order.total_price }} บาท</h2>
+
+                {% if order.payment_method == 'promptpay' %}
+                    {% if promptpay_qr %}
+                    <div class="d-inline-block p-3 bg-white border rounded-4 shadow-sm">
+                        <img src="{{ promptpay_qr }}" alt="PromptPay QR" width="240" height="240">
+                    </div>
+                    {% if setting.promptpay_name %}<p class="mt-3 mb-1 fw-semibold">{{ setting.promptpay_name }}</p>{% endif %}
+                    <p class="text-muted small mb-0">พร้อมเพย์: {{ setting.promptpay_id }}</p>
+                    <p class="text-muted small">เปิดแอปธนาคารแล้วสแกน QR เพื่อชำระเงิน (ระบุยอดอัตโนมัติ)</p>
+                    {% else %}
+                    <div class="alert alert-warning rounded-4">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>{{ promptpay_error|default:"ยังไม่ได้ตั้งค่าพร้อมเพย์ไอดี กรุณาติดต่อร้านค้า" }}
+                    </div>
+                    {% endif %}
+                {% else %}
+                    {% if setting.bank_qr_image %}
+                    <img src="{{ setting.bank_qr_image.url }}" alt="QR ธนาคาร" class="img-fluid rounded-4 border shadow-sm" style="max-width: 280px;">
+                    {% else %}
+                    <div class="alert alert-warning rounded-4">
+                        <i class="fa-solid fa-triangle-exclamation me-1"></i>ยังไม่ได้อัปโหลด QR ธนาคาร กรุณาติดต่อร้านค้า
+                    </div>
+                    {% endif %}
+                    {% if setting.bank_name or setting.account_number %}
+                    <div class="mt-3 text-start d-inline-block">
+                        {% if setting.bank_name %}<p class="mb-1"><i class="fa-solid fa-building-columns me-2 text-muted"></i><strong>{{ setting.bank_name }}</strong></p>{% endif %}
+                        {% if setting.account_name %}<p class="mb-1"><i class="fa-solid fa-user me-2 text-muted"></i>{{ setting.account_name }}</p>{% endif %}
+                        {% if setting.account_number %}<p class="mb-0"><i class="fa-solid fa-hashtag me-2 text-muted"></i>{{ setting.account_number }}</p>{% endif %}
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card card-app shadow-sm mb-4">
+            <div class="card-header bg-primary text-white"><h5 class="mb-0"><i class="fa-solid fa-receipt me-2"></i>รายการสินค้า</h5></div>
+            <div class="card-body">
+                <table class="table table-sm align-middle table-app mb-0">
+                    <thead>
+                        <tr><th>สินค้า</th><th class="text-center">จำนวน</th><th class="text-end">รวม</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>{{ item.sneaker.name }}</td>
+                            <td class="text-center fw-bold">{{ item.quantity }}</td>
+                            <td class="text-end fw-bold">{{ item.total_price }} บาท</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light fw-semibold">
+                            <td colspan="2" class="text-end">รวมทั้งสิ้น</td>
+                            <td class="text-end fw-bold text-danger">{{ order.total_price }} บาท</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <div class="card card-app shadow-sm">
+            <div class="card-header bg-success text-white"><h5 class="mb-0"><i class="fa-solid fa-receipt me-2"></i>แจ้งชำระเงิน / แนบสลิป</h5></div>
+            <div class="card-body">
+                {% if order.payment_status == 'submitted' %}
+                <div class="alert alert-info rounded-4 mb-3">
+                    <i class="fa-solid fa-clock me-1"></i>คุณแจ้งชำระเงินแล้ว อยู่ระหว่างรอแอดมินตรวจสอบสลิป
+                    {% if order.payment_reference %}<br><small>หมายเหตุ: {{ order.payment_reference }}</small>{% endif %}
+                </div>
+                {% if order.payment_slip %}
+                <p class="small text-muted mb-2">สลิปที่แนบไว้:</p>
+                <a href="{{ order.payment_slip.url }}" target="_blank">
+                    <img src="{{ order.payment_slip.url }}" alt="สลิป" class="img-fluid rounded-3 border mb-3" style="max-height: 220px;">
+                </a>
+                {% endif %}
+                {% elif order.payment_status == 'rejected' %}
+                <div class="alert alert-danger rounded-4 mb-3">
+                    <i class="fa-solid fa-circle-xmark me-1"></i>สลิปไม่ถูกต้อง กรุณาตรวจสอบและแนบสลิปใหม่
+                    {% if order.payment_note %}<br><small>หมายเหตุจากร้าน: {{ order.payment_note }}</small>{% endif %}
+                </div>
+                {% endif %}
+
+                <form method="POST" action="{% url 'submit_payment' order.id %}" enctype="multipart/form-data" class="form-app">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">แนบสลิปการโอน <span class="text-danger">*</span></label>
+                        <input type="file" name="payment_slip" accept="image/*" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small mb-1">หมายเหตุ / เลขอ้างอิง (ไม่บังคับ)</label>
+                        <input type="text" name="payment_reference" class="form-control" placeholder="เช่น เวลาโอน หรือเลขท้ายบัญชี" value="{{ order.payment_reference }}">
+                    </div>
+                    <button type="submit" class="btn btn-accent w-100 py-2">
+                        <i class="fa-solid fa-paper-plane me-1"></i>
+                        {% if order.payment_status == 'submitted' or order.payment_status == 'rejected' %}แจ้งชำระเงินอีกครั้ง{% else %}ฉันชำระเงินแล้ว / แจ้งชำระเงิน{% endif %}
+                    </button>
+                </form>
+                <a href="{% url 'order_success' order.id %}" class="btn btn-outline-secondary btn-pill-modern w-100 mt-2">
+                    <i class="fa-solid fa-arrow-left me-1"></i>ข้ามไปหน้ารายละเอียดออเดอร์
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

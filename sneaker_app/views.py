@@ -7,10 +7,12 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseForbidden, JsonResponse
+from django.utils import timezone
 from functools import wraps
 
-from .models import Sneaker, Stock, Employee, CartItem, Profile, Order, OrderItem, StoreLocation
+from .models import Sneaker, Stock, Employee, CartItem, Profile, Order, OrderItem, StoreLocation, PaymentSetting
 from .forms import SneakerForm, StockForm, EmployeeForm, RegisterForm, CheckoutForm, UserProfileForm
+from .promptpay import generate_promptpay_payload, generate_qr_data_uri, validate_target
 
 
 def admin_required(view_func):
@@ -294,9 +296,11 @@ def checkout(request):
             return redirect('cart_list')
 
     total = sum(item.total_price() for item in items)
+    setting = PaymentSetting.get_solo()
+    enabled_methods = setting.enabled_methods()
 
     if request.method == 'POST':
-        form = CheckoutForm(request.POST)
+        form = CheckoutForm(request.POST, enabled_methods=enabled_methods)
         if form.is_valid():
             order = form.save(commit=False)
             order.user = request.user
@@ -309,17 +313,107 @@ def checkout(request):
                     price=item.sneaker.price,
                 )
             items.delete()
+            if order.is_qr_payment():
+                messages.success(request, f"สั่งซื้อสำเร็จ! หมายเลขออเดอร์ #{order.id} กรุณาชำระเงิน")
+                return redirect('payment_page', order_id=order.id)
             messages.success(request, f"สั่งซื้อสำเร็จ! หมายเลขออเดอร์ #{order.id}")
             return redirect('order_success', order_id=order.id)
     else:
-        form = CheckoutForm()
-    return render(request, 'sneaker_app/checkout.html', {'form': form, 'items': items, 'total': total})
+        form = CheckoutForm(enabled_methods=enabled_methods)
+    return render(request, 'sneaker_app/checkout.html', {
+        'form': form,
+        'items': items,
+        'total': total,
+        'setting': setting,
+    })
 
 
 @login_required(login_url='/login/')
 def order_success(request, order_id):
     order = get_object_or_404(Order, pk=order_id, user=request.user)
     return render(request, 'sneaker_app/order_success.html', {'order': order})
+
+
+# === ระบบชำระเงินผ่าน QR Code ===
+@login_required(login_url='/login/')
+def payment_page(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    if order.payment_method == 'cod':
+        messages.info(request, "ออเดอร์นี้เลือกเก็บเงินปลายทาง ไม่ต้องชำระเงินล่วงหน้า")
+        return redirect('order_success', order_id=order.id)
+    if order.payment_status == 'paid':
+        messages.info(request, "ออเดอร์นี้ชำระเงินเรียบร้อยแล้ว")
+        return redirect('order_success', order_id=order.id)
+
+    setting = PaymentSetting.get_solo()
+    promptpay_qr = ''
+    promptpay_error = ''
+    if order.payment_method == 'promptpay':
+        promptpay_error = validate_target(setting.promptpay_id)
+        if not promptpay_error:
+            payload = generate_promptpay_payload(setting.promptpay_id, order.total_price())
+            promptpay_qr = generate_qr_data_uri(payload)
+            if not promptpay_qr:
+                promptpay_error = 'ไม่สามารถสร้างคิวอาร์โค้ดได้ กรุณาติดต่อร้านค้า'
+
+    return render(request, 'sneaker_app/payment.html', {
+        'order': order,
+        'setting': setting,
+        'promptpay_qr': promptpay_qr,
+        'promptpay_error': promptpay_error,
+    })
+
+
+@login_required(login_url='/login/')
+def submit_payment(request, order_id):
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    if request.method != 'POST':
+        return redirect('payment_page', order_id=order.id)
+    if order.payment_method == 'cod' or order.payment_status == 'paid':
+        return redirect('order_success', order_id=order.id)
+
+    slip = request.FILES.get('payment_slip')
+    reference = request.POST.get('payment_reference', '').strip()
+    if slip:
+        order.payment_slip = slip
+    if reference:
+        order.payment_reference = reference
+
+    if not order.payment_slip:
+        messages.error(request, "กรุณาแนบสลิปการโอนเงินก่อนแจ้งชำระ")
+        return redirect('payment_page', order_id=order.id)
+
+    order.payment_status = 'submitted'
+    order.payment_note = ''
+    order.save()
+    messages.success(request, "แจ้งชำระเงินเรียบร้อยแล้ว รอแอดมินตรวจสอบสลิป")
+    return redirect('order_success', order_id=order.id)
+
+
+# === ตรวจสอบการชำระเงิน (Admin) ===
+@admin_required
+def admin_confirm_payment(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        order.payment_status = 'paid'
+        order.paid_at = timezone.now()
+        order.payment_note = request.POST.get('payment_note', '').strip()
+        if order.status == 'Pending':
+            order.status = 'Shipping'
+        order.save()
+        messages.success(request, f"ยืนยันการชำระเงินออเดอร์ #{order.id} แล้ว")
+    return redirect('admin_orders')
+
+
+@admin_required
+def admin_reject_payment(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+    if request.method == 'POST':
+        order.payment_status = 'rejected'
+        order.payment_note = request.POST.get('payment_note', '').strip()
+        order.save()
+        messages.warning(request, f"ปฏิเสธการชำระเงินออเดอร์ #{order.id} แล้ว")
+    return redirect('admin_orders')
 
 
 @login_required(login_url='/login/')

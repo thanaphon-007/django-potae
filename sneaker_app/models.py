@@ -102,6 +102,17 @@ class Order(models.Model):
         ('Completed', 'จัดส่งแล้ว'),
         ('Cancelled', 'ยกเลิก'),
     ]
+    PAYMENT_METHOD_CHOICES = [
+        ('cod', 'เก็บเงินปลายทาง'),
+        ('promptpay', 'พร้อมเพย์ QR (PromptPay)'),
+        ('bank_qr', 'โอนผ่าน QR ธนาคาร'),
+    ]
+    PAYMENT_STATUS_CHOICES = [
+        ('unpaid', 'ยังไม่ชำระเงิน'),
+        ('submitted', 'แจ้งชำระแล้ว / รอตรวจสอบ'),
+        ('paid', 'ชำระเงินแล้ว'),
+        ('rejected', 'สลิปไม่ถูกต้อง / ปฏิเสธ'),
+    ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', verbose_name='ผู้สั่งซื้อ')
     first_name = models.CharField(max_length=100, default='', verbose_name='ชื่อ')
     last_name = models.CharField(max_length=100, default='', verbose_name='นามสกุล')
@@ -109,6 +120,12 @@ class Order(models.Model):
     postal_code = models.CharField(max_length=10, default='', verbose_name='รหัสไปรษณีย์')
     phone = models.CharField(max_length=20, verbose_name='เบอร์โทรศัพท์')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending', verbose_name='สถานะ')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod', verbose_name='วิธีชำระเงิน')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid', verbose_name='สถานะการชำระเงิน')
+    payment_slip = models.ImageField(upload_to='slips/', null=True, blank=True, verbose_name='สลิปการโอน')
+    payment_reference = models.CharField(max_length=200, blank=True, default='', verbose_name='หมายเหตุ/เลขอ้างอิงการโอน')
+    payment_note = models.TextField(blank=True, default='', verbose_name='หมายเหตุจากแอดมิน')
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name='เวลาที่ชำระเงิน')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='วันที่สั่งซื้อ')
 
     def __str__(self):
@@ -116,6 +133,12 @@ class Order(models.Model):
 
     def total_price(self):
         return sum(item.total_price() for item in self.items.all())
+
+    def is_qr_payment(self):
+        return self.payment_method in ('promptpay', 'bank_qr')
+
+    def needs_payment(self):
+        return self.is_qr_payment() and self.payment_status != 'paid'
 
 
 class OrderItem(models.Model):
@@ -158,3 +181,41 @@ class StoreLocation(models.Model):
             'image_url': self.image.url if self.image else None,
             'maps_url': f'https://www.google.com/maps?q={self.latitude},{self.longitude}',
         }
+
+
+# ระบบหลัก 8: ตั้งค่าการชำระเงิน (พร้อมเพย์ / QR ธนาคาร)
+class PaymentSetting(models.Model):
+    promptpay_id = models.CharField(max_length=20, blank=True, default='', verbose_name='พร้อมเพย์ไอดี (เบอร์โทร / เลขบัตรประชาชน)')
+    promptpay_name = models.CharField(max_length=100, blank=True, default='', verbose_name='ชื่อบัญชีพร้อมเพย์')
+    bank_name = models.CharField(max_length=100, blank=True, default='', verbose_name='ชื่อธนาคาร')
+    account_name = models.CharField(max_length=100, blank=True, default='', verbose_name='ชื่อบัญชีธนาคาร')
+    account_number = models.CharField(max_length=30, blank=True, default='', verbose_name='เลขที่บัญชี')
+    bank_qr_image = models.ImageField(upload_to='payment/', null=True, blank=True, verbose_name='รูป QR ธนาคาร')
+    cod_enabled = models.BooleanField(default=True, verbose_name='เปิดใช้เก็บเงินปลายทาง')
+    promptpay_enabled = models.BooleanField(default=True, verbose_name='เปิดใช้พร้อมเพย์ QR')
+    bank_qr_enabled = models.BooleanField(default=True, verbose_name='เปิดใช้ QR ธนาคาร')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'ตั้งค่าการชำระเงิน'
+        verbose_name_plural = 'ตั้งค่าการชำระเงิน'
+
+    def __str__(self):
+        return 'ตั้งค่าการชำระเงิน'
+
+    @classmethod
+    def get_solo(cls):
+        obj = cls.objects.first()
+        if obj is None:
+            obj = cls.objects.create()
+        return obj
+
+    def enabled_methods(self):
+        methods = []
+        if self.cod_enabled:
+            methods.append('cod')
+        if self.promptpay_enabled and self.promptpay_id:
+            methods.append('promptpay')
+        if self.bank_qr_enabled and self.bank_qr_image:
+            methods.append('bank_qr')
+        return methods or ['cod']

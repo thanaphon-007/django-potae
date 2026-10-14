@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from .models import Sneaker, Stock, Employee, Profile, Order
+from .models import Sneaker, Stock, Employee, Profile, Order, PaymentSetting
+from .promptpay import validate_target
 
 class SneakerForm(forms.ModelForm):
     class Meta:
@@ -106,13 +107,14 @@ class UserProfileForm(forms.ModelForm):
 class CheckoutForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['first_name', 'last_name', 'address', 'postal_code', 'phone']
+        fields = ['first_name', 'last_name', 'address', 'postal_code', 'phone', 'payment_method']
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'ชื่อ'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'นามสกุล'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'เช่น ถนนสุขุมวิท เขตคลองเตย กรุงเทพฯ'}),
             'postal_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'เช่น 10110', 'maxlength': '5', 'pattern': '[0-9]{5}', 'title': 'ระบุรหัสไปรษณีย์ 5 หลัก'}),
             'phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '08x-xxx-xxxx'}),
+            'payment_method': forms.RadioSelect(),
         }
         labels = {
             'first_name': 'ชื่อ',
@@ -120,10 +122,34 @@ class CheckoutForm(forms.ModelForm):
             'address': 'ที่อยู่จัดส่ง',
             'postal_code': 'รหัสไปรษณีย์',
             'phone': 'เบอร์โทรศัพท์',
+            'payment_method': 'วิธีชำระเงิน',
         }
+
+    def __init__(self, *args, enabled_methods=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if enabled_methods:
+            self.fields['payment_method'].choices = [
+                (value, label) for value, label in Order.PAYMENT_METHOD_CHOICES
+                if value in enabled_methods
+            ]
+            self.fields['payment_method'].initial = enabled_methods[0]
 
     def clean_postal_code(self):
         postal_code = self.cleaned_data.get('postal_code', '').strip()
         if not postal_code.isdigit() or len(postal_code) != 5:
             raise forms.ValidationError("รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลักเท่านั้น")
         return postal_code
+
+
+class PaymentSettingForm(forms.ModelForm):
+    class Meta:
+        model = PaymentSetting
+        fields = '__all__'
+
+    def clean_promptpay_id(self):
+        value = self.cleaned_data.get('promptpay_id', '').strip()
+        if value:
+            error = validate_target(value)
+            if error:
+                raise forms.ValidationError(error)
+        return value

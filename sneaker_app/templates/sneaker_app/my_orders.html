@@ -19,6 +19,10 @@
             {% elif order.status == 'Shipping' %}<span class="badge bg-info rounded-pill">{{ order.get_status_display }}</span>
             {% elif order.status == 'Completed' %}<span class="badge bg-success rounded-pill">{{ order.get_status_display }}</span>
             {% else %}<span class="badge bg-danger rounded-pill">{{ order.get_status_display }}</span>{% endif %}
+            {% if order.payment_status == 'paid' %}<span class="badge bg-success-subtle text-success border border-success rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>ชำระแล้ว</span>
+            {% elif order.payment_status == 'submitted' %}<span class="badge bg-info-subtle text-info-emphasis border border-info rounded-pill"><i class="fa-solid fa-clock me-1"></i>รอตรวจสอบสลิป</span>
+            {% elif order.payment_status == 'rejected' %}<span class="badge bg-danger-subtle text-danger border border-danger rounded-pill"><i class="fa-solid fa-circle-xmark me-1"></i>สลิปไม่ถูกต้อง</span>
+            {% elif order.payment_method != 'cod' %}<span class="badge bg-warning-subtle text-warning-emphasis border border-warning rounded-pill"><i class="fa-solid fa-hourglass-half me-1"></i>ยังไม่ชำระเงิน</span>{% endif %}
             {% if order.status == 'Pending' %}
             <a href="{% url 'order_delete' order.pk %}" class="btn btn-sm btn-outline-danger rounded-pill" title="ลบออเดอร์"><i class="fa-solid fa-trash"></i></a>
             {% endif %}
@@ -28,8 +32,14 @@
         <p class="mb-2 small text-muted">
             <i class="fa-solid fa-user me-1"></i><strong>{{ order.first_name }} {{ order.last_name }}</strong> &nbsp;|&nbsp;
             <i class="fa-solid fa-location-dot me-1"></i>{{ order.address }} {{ order.postal_code }} &nbsp;|&nbsp;
-            <i class="fa-solid fa-phone me-1"></i>{{ order.phone }}
+            <i class="fa-solid fa-phone me-1"></i>{{ order.phone }} &nbsp;|&nbsp;
+            <i class="fa-solid fa-wallet me-1"></i>{{ order.get_payment_method_display }}
         </p>
+        {% if order.needs_payment %}
+        <a href="{% url 'payment_page' order.id %}" class="btn btn-sm btn-accent btn-pill-modern mb-2">
+            <i class="fa-solid fa-qrcode me-1"></i>ชำระเงิน
+        </a>
+        {% endif %}
         <table class="table table-sm align-middle table-app mt-2 mb-0">
             <thead>
                 <tr>

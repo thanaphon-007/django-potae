@@ -1,6 +1,11 @@
 {% extends 'sneaker_app/base.html' %}
 
 {% block content %}
+<style>
+    .payment-choice { cursor: pointer; transition: all .2s ease; background: #fff; }
+    .payment-choice:hover { border-color: var(--brand-accent) !important; box-shadow: 0 6px 18px rgba(255,87,34,.12); }
+    .payment-choice:has(input:checked) { border-color: var(--brand-accent) !important; background: rgba(255,87,34,.05); }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h3 class="fw-bold mb-0"><i class="fa-solid fa-receipt me-2 text-success"></i>ชำระสินค้า / สั่งซื้อ</h3>
     <a href="{% url 'cart_list' %}" class="btn btn-outline-secondary btn-pill-modern px-4"><i class="fa-solid fa-arrow-left me-1"></i>กลับตะกร้า</a>
@@ -38,6 +43,27 @@
                             <label class="form-label fw-semibold small mb-1">เบอร์โทรศัพท์</label>
                             {{ form.phone }}
                             {% for error in form.phone.errors %}<small class="text-danger d-block"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</small>{% endfor %}
+                        </div>
+
+                        <div class="col-md-12 mt-2">
+                            <hr class="my-2">
+                            <label class="form-label fw-semibold small mb-2"><i class="fa-solid fa-wallet me-1 text-success"></i>วิธีชำระเงิน</label>
+                            <div class="row g-2">
+                                {% for radio in form.payment_method %}
+                                <div class="col-12">
+                                    <label class="payment-choice d-flex align-items-center gap-3 p-3 border rounded-4" for="{{ radio.id_for_label }}">
+                                        {{ radio.tag }}
+                                        <span class="fs-3 lh-1">
+                                            {% if radio.data.value == 'cod' %}<i class="fa-solid fa-money-bill-wave text-success"></i>
+                                            {% elif radio.data.value == 'promptpay' %}<i class="fa-solid fa-qrcode text-primary"></i>
+                                            {% else %}<i class="fa-solid fa-building-columns text-warning"></i>{% endif %}
+                                        </span>
+                                        <span class="fw-semibold">{{ radio.choice_label }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="text-muted d-block mt-2"><i class="fa-solid fa-circle-info me-1"></i>หากเลือกชำระผ่าน QR ระบบจะแสดงคิวอาร์โค้ดให้สแกนหลังยืนยันการสั่งซื้อ</small>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-accent w-100 py-2 mt-4"><i class="fa-solid fa-circle-check me-1"></i>ยืนยันการสั่งซื้อ</button>
